@@ -15,8 +15,6 @@ import logging
 
 import requests
 
-EVENT_TYPE = 'blacklist.event/add'
-
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
@@ -34,101 +32,131 @@ except KeyError as e:
     exit(1)
 
 
+def revoke_application(application_id):
+    """Revoke application specified by application_id"""
+    revoke_url = f'{rems_url}/api/applications/revoke'
+    headers = {
+        'accept': 'application/json',
+        'x-rems-api-key': rems_admin_api_key,
+        'x-rems-user-id': rems_admin_userid,
+        'Content-Type': 'application/json',
+    }
+    data = json.dumps(
+        {
+            "application-id": application_id,
+            "comment": "Application revoked by auto-revoker after user added to deny list",
+            "attachments": []
+        }
+    )
+    response = requests.post(
+        url=revoke_url,
+        headers=headers,
+        data=data,
+    )
+
+    if response.status_code != 200:
+        raise Exception(f'Response code {response.status_code} received. Reason: {response.reason}')
+
+
+def get_entitlement_application_ids(user_id, resource_id, event_id):
+    """Return list of application IDs for entitlements associated with user_id and resource_id"""
+    entitlements_url = f'{rems_url}/api/entitlements'
+    params = {
+        'user': user_id,
+        'resource': resource_id,
+        'expired': 'false'
+    }
+    headers = {
+        'accept': 'application/json',
+        'x-rems-api-key': rems_admin_api_key,
+        'x-rems-user-id': rems_admin_userid,
+    }
+    log.info(f'{event_id} Retrieving entitlements for user ID {user_id} and resource ID {resource_id}')
+    response = requests.get(
+        url=entitlements_url,
+        params=params,
+        headers=headers,
+    )
+    log.info(f'{event_id} Response: {response.status_code} {response.reason}')
+    if response.status_code != 200:
+        raise Exception(f'Response code {response.status_code} received when retrieving entitlements')
+
+    return [entitlement['application-id'] for entitlement in response.json()]
+
+
+def revoke_entitlements(user_id, resource_id, event_id):
+    """
+    Revoke applications for active entitlements for specified user_id and resource_id
+    Will report errors and continue processing
+    """
+    application_ids = get_entitlement_application_ids(user_id, resource_id, event_id)
+    revoked_count = 0
+    for application_id in application_ids:
+        try:
+            log.info(f'{event_id} Revoking application {application_id}')
+            revoke_application(application_id)
+            log.info(f'{event_id} Revoked application {application_id}')
+            revoked_count += 1
+        except Exception as e:
+            log.warning(f'{event_id} Failure revoking application_id {application_id}: {e}')
+    return revoked_count
+
+
+def blacklist_add_event_handler(data, event_id):
+    """Handle blacklist.event/add event - added to REMSAutoEntitlementRevoker.EVENT_HANDLERS"""
+    # TODO: Find out what these should actually be
+    user_id = data['event/blacklist']['blacklist/user']['userid']
+    resource_id = data['event/blacklist']['blacklist/resource']['resource/ext-id']
+    log.info(f'{event_id} Revoking entitlements for user id: {user_id}, resource_id: {resource_id}')
+    revoked_count = revoke_entitlements(user_id, resource_id, event_id)
+    log.info(
+        f'{event_id} Revoked {revoked_count} entitlements for user id: {user_id}, resource_id: {resource_id}')
+
+
 class REMSAutoEntitlementRevoker(http.server.BaseHTTPRequestHandler):
-    def get_entitlement_application_ids(self, user_id, resource_id, event_id):
-        '''Return list of application IDs for entitlements associated with user_id and resource_id'''
-        entitlements_url = f'{rems_url}/api/entitlements'
-        params = {
-            'user': user_id,
-            'resource': resource_id,
-            'expired': 'false'
-        }
-        headers = {
-            'accept': 'application/json',
-            'x-rems-api-key': rems_admin_api_key,
-            'x-rems-user-id': rems_admin_userid,
-        }
-        log.info(f'{event_id} Retrieving entitlements for user ID {user_id} and resource ID {resource_id}')
-        response = requests.get(
-            url=entitlements_url,
-            params=params,
-            headers=headers,
-        )
-        log.info(f'{event_id} Response: {response.status_code} {response.reason}')
-        if response.status_code != 200:
-            raise Exception(f'Response code {response.status_code} received when retrieving entitlements')
-
-        return [entitlement['application-id'] for entitlement in response.json()]
-
-    def revoke_application(self, application_id):
-        revoke_url = f'{rems_url}/api/applications/revoke'
-        headers = {
-            'accept': 'application/json',
-            'x-rems-api-key': rems_admin_api_key,
-            'x-rems-user-id': rems_admin_userid,
-            'Content-Type': 'application/json',
-        }
-        data = json.dumps(
-            {
-                "application-id": application_id,
-                "comment": "Application revoked by auto-revoker after user added to deny list",
-                "attachments": []
-            }
-        )
-        response = requests.post(
-            url=revoke_url,
-            headers=headers,
-            data=data,
-        )
-
-        if response.status_code != 200:
-            raise Exception(f'Response code {response.status_code} received. Reason: {response.reason}')
-
-
-    def revoke_entitlements(self, user_id, resource_id, event_id):
-        application_ids = self.get_entitlement_application_ids(user_id, resource_id, event_id)
-        revoked_count = 0
-        for application_id in application_ids:
-            try:
-                log.info(f'{event_id} Revoking application {application_id}')
-                self.revoke_application(application_id)
-                log.info(f'{event_id} Revoked application {application_id}')
-                revoked_count += 1
-            except Exception as e:
-                log.info(f'{event_id} Failure revoking application_id {application_id}: {e}')
-        return revoked_count
+    # Specify valid event handler functions here
+    EVENT_HANDLERS = {'blacklist.event/add': blacklist_add_event_handler}
 
     def do_PUT(self):
-        log.debug(f'Received PUT request, headers: {self.headers}')
+        """Handle PUT request to /event path for specific events defined in REMSAutoEntitlementRevoker.EVENT_HANDLERS"""
+        log.debug(f'Received PUT request at {self.path}, headers: {self.headers}')
         length = int(self.headers['content-length'])
         payload = self.rfile.read(length).decode("utf-8")
         data = json.loads(payload)
-        event_id = f'event/id:{data["event/id"]}'
-        log.debug(f'{event_id} data: {data}')
+
         try:
-            if data['event/type'] == EVENT_TYPE:
-                log.info(f'{event_id} Received event notification: {data["event/type"]}')
-                # TODO: Find out what these should actually be
-                user_id = data['event/blacklist']['blacklist/user']['userid']
-                resource_id = data['event/blacklist']['blacklist/resource']['resource/ext-id']
-                log.info(f'{event_id} Revoking entitlements for user id: {user_id}, resource_id: {resource_id}')
-                try:
-                    revoked_count = self.revoke_entitlements(user_id, resource_id, event_id)
-                    log.info(
-                        f'{event_id} Revoked {revoked_count} entitlements for user id: {user_id}, resource_id: {resource_id}')
-                    self.send_response(200, message='OK')
-                except Exception as e:
-                    log.info(f'{event_id} Failure revoking entitlements')
-                    self.send_response(400, message=f'{e}')
-            else:
-                log.info(f'{event_id} Received illegal event type: {data["event/type"]}. Expected {EVENT_TYPE}')
-                self.send_response(400)
+            event_id = f'event/id:{data["event/id"]}'
+            log.debug(f'{event_id} data: {data}')
         except KeyError:
-            msg = f'{event_id} KeyError: Missing or invalid data!'
-            log.debug(msg)
-            log.debug(f'{event_id} Data: {payload}')
+            msg = f'KeyError: Missing or invalid event_id!'
+            log.error(msg)
             self.send_response(400, message=msg)
             raise
+
+        if self.path != '/event':
+            msg = f'{event_id} Invalid path "{self.path}"!'
+            log.debug(msg)
+            self.send_response(404, message=msg)
+            raise Exception(msg)
+
+        event_type = data.get('event/type') or '<UNDEFINED>'
+        try:
+            event_handler = REMSAutoEntitlementRevoker.EVENT_HANDLERS.get(event_type)
+            if event_handler:
+                log.info(f'{event_id} Received valid event notification: {event_type}')
+                event_handler(data, event_id)
+                self.send_response(200, message='OK')
+            else:
+                msg = f'{event_id} Received illegal event type: {event_type}. ' \
+                      f'Expected one of {list(REMSAutoEntitlementRevoker.EVENT_HANDLERS.keys())}'
+                log.error(msg)
+                self.send_response(400, message=msg)
+
+        except Exception as e:  # Generic exception handling for event handling
+            msg = f'{event_id} Error handling event event_type: {type(e).__name__}: {e}'
+            log.error(msg)
+            self.send_response(500, message=msg)
+
         self.end_headers()
         return
 
