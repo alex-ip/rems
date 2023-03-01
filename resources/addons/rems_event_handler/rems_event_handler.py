@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# A simple HTTP server listening REMS 'blacklist.event/add' event notifications.
-# On notification it tries to revoke any existing entitlements for that user & resource.
+# A simple HTTP server listening for REMS event notifications.
+# On 'blacklist.event/add' notification it tries to revoke any existing entitlements for that user & resource.
 
 # A configuration file 'config.ini' must be supplied.
 
@@ -103,7 +103,7 @@ def revoke_entitlements(user_id, resource_id, event_id):
 
 
 def blacklist_add_event_handler(data, event_id):
-    """Handle blacklist.event/add event - added to REMSAutoEntitlementRevoker.EVENT_HANDLERS"""
+    """Handle blacklist.event/add event - added to REMSEventHandler.EVENT_HANDLERS"""
     # TODO: Find out what these should actually be
     user_id = data['event/blacklist']['blacklist/user']['userid']
     resource_id = data['event/blacklist']['blacklist/resource']['resource/ext-id']
@@ -113,12 +113,12 @@ def blacklist_add_event_handler(data, event_id):
         f'{event_id} Revoked {revoked_count} entitlements for user id: {user_id}, resource_id: {resource_id}')
 
 
-class REMSAutoEntitlementRevoker(http.server.BaseHTTPRequestHandler):
+class REMSEventHandler(http.server.BaseHTTPRequestHandler):
     # Specify valid events and their handler functions here
     EVENT_HANDLERS = {'blacklist.event/add': blacklist_add_event_handler}
 
     def do_PUT(self):
-        """Handle PUT request to /event path for specific events defined in REMSAutoEntitlementRevoker.EVENT_HANDLERS"""
+        """Handle PUT request to /event path for specific events defined in REMSEventHandler.EVENT_HANDLERS"""
         log.debug(f'Received PUT request at {self.path}, headers: {self.headers}')
         length = int(self.headers['content-length'])
         payload = self.rfile.read(length).decode("utf-8")
@@ -143,14 +143,14 @@ class REMSAutoEntitlementRevoker(http.server.BaseHTTPRequestHandler):
         if not failed:
             event_type = data.get('event/type') or '<UNDEFINED>'
             try:
-                event_handler = REMSAutoEntitlementRevoker.EVENT_HANDLERS.get(event_type)
+                event_handler = REMSEventHandler.EVENT_HANDLERS.get(event_type)
                 if event_handler:
                     log.info(f'{event_id} Received valid event notification: {event_type}')
                     event_handler(data, event_id)
                     self.send_response(200, message='OK')
                 else:
                     msg = f'{event_id} Received illegal event type: {event_type}. ' \
-                          f'Expected one of {list(REMSAutoEntitlementRevoker.EVENT_HANDLERS.keys())}'
+                          f'Expected one of {list(REMSEventHandler.EVENT_HANDLERS.keys())}'
                     log.error(msg)
                     self.send_response(400, message=msg)
 
@@ -164,7 +164,7 @@ class REMSAutoEntitlementRevoker(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    handler_class = REMSAutoEntitlementRevoker
+    handler_class = REMSEventHandler
     http_server = http.server.HTTPServer((url, port), handler_class)
     with http_server:
         try:

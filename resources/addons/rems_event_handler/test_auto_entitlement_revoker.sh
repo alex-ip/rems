@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 
 curl -X 'PUT' \
-  'http://localhost:3009/' \
-  -H 'accept: application/json' \
-  -H 'x-rems-api-key: 511a9e58-866a-4488-b052-12058c1dc51b' \
-  -H 'x-rems-user-id: http://cilogon.org/serverE/users/26179' \
+  'http://localhost:3009/event' \
+  -H 'accept: */*' \
   -H 'Content-Type: application/json' \
   -d '{
     "event/id": "TEST_EVENT",
