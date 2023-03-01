@@ -34,24 +34,24 @@ curl -X 'PUT' \
 			"workflow/id": 25,
 			"workflow.dynamic/handlers": [
 				{
-					"email": "alerts@ldaca.edu.au",
+					"email": "alerts@example.com",
 					"userid": "approver-bot",
 					"name": "Approver Bot",
 					"handler/active?": true
 				},
 				{
-					"email": "Steele.Cooke@aarnet.edu.au",
+					"email": "handler@example.com",
 					"userid": "http://cilogon.org/serverE/users/26178",
 					"name": "Steele Cooke"
 				},
 				{
-					"email": "Alex.Ip@aarnet.edu.au",
+					"email": "admin@example.com",
 					"userid": "http://cilogon.org/serverE/users/26179",
 					"name": "Alex Ip",
 					"handler/active?": true
 				},
 				{
-					"email": "alerts@ldaca.edu.au",
+					"email": "alerts@example.com",
 					"userid": "rejecter-bot",
 					"name": "Rejecter Bot"
 				}
@@ -65,7 +65,7 @@ curl -X 'PUT' \
 					"resource/ext-id": "https://dev-binderhub.atap-binder.cloud.edu.au/"
 				},
 				"blacklist/user": {
-					"email": "ipai3458@gmail.com",
+					"email": "user@example.com",
 					"userid": "http://cilogon.org/serverE/users/26416",
 					"name": "Alex Ip"
 				}
@@ -73,7 +73,7 @@ curl -X 'PUT' \
 		],
 		"application/id": 162,
 		"application/applicant": {
-			"email": "ipai3458@gmail.com",
+			"email": "user@example.com",
 			"userid": "http://cilogon.org/serverE/users/26416",
 			"name": "Alex Ip"
 		},
@@ -119,8 +119,8 @@ curl -X 'PUT' \
 						"field/max-length": null,
 						"field/visible": true,
 						"field/type": "text",
-						"field/value": "Alex Ip (ipai3458@gmail.com)",
-						"field/previous-value": "Alex Ip (ipai3458@gmail.com)",
+						"field/value": "Alex Ip (user@example.com)",
+						"field/previous-value": "Alex Ip (user@example.com)",
 						"field/id": "fld1",
 						"field/optional": false,
 						"field/placeholder": {
@@ -181,7 +181,7 @@ curl -X 'PUT' \
 			{
 				"application/external-id": "2023/127",
 				"event/actor-attributes": {
-					"email": "ipai3458@gmail.com",
+					"email": "user@example.com",
 					"userid": "http://cilogon.org/serverE/users/26416",
 					"name": "Alex Ip"
 				},
@@ -211,7 +211,7 @@ curl -X 'PUT' \
 			},
 			{
 				"event/actor-attributes": {
-					"email": "ipai3458@gmail.com",
+					"email": "user@example.com",
 					"userid": "http://cilogon.org/serverE/users/26416",
 					"name": "Alex Ip"
 				},
@@ -219,7 +219,7 @@ curl -X 'PUT' \
 				"event/time": "2023-03-01T06:16:26.669Z",
 				"application/field-values": [
 					{
-						"value": "Alex Ip (ipai3458@gmail.com)",
+						"value": "Alex Ip (user@example.com)",
 						"field": "fld1",
 						"form": 10
 					},
@@ -240,7 +240,7 @@ curl -X 'PUT' \
 			},
 			{
 				"event/actor-attributes": {
-					"email": "ipai3458@gmail.com",
+					"email": "user@example.com",
 					"userid": "http://cilogon.org/serverE/users/26416",
 					"name": "Alex Ip"
 				},
@@ -256,7 +256,7 @@ curl -X 'PUT' \
 			},
 			{
 				"event/actor-attributes": {
-					"email": "ipai3458@gmail.com",
+					"email": "user@example.com",
 					"userid": "http://cilogon.org/serverE/users/26416",
 					"name": "Alex Ip"
 				},
@@ -271,7 +271,7 @@ curl -X 'PUT' \
 			},
 			{
 				"event/actor-attributes": {
-					"email": "ipai3458@gmail.com",
+					"email": "user@example.com",
 					"userid": "http://cilogon.org/serverE/users/26416",
 					"name": "Alex Ip"
 				},
@@ -279,7 +279,7 @@ curl -X 'PUT' \
 				"event/time": "2023-03-01T06:16:30.438Z",
 				"application/field-values": [
 					{
-						"value": "Alex Ip (ipai3458@gmail.com)",
+						"value": "Alex Ip (user@example.com)",
 						"field": "fld1",
 						"form": 10
 					},
@@ -301,7 +301,7 @@ curl -X 'PUT' \
 			},
 			{
 				"event/actor-attributes": {
-					"email": "ipai3458@gmail.com",
+					"email": "user@example.com",
 					"userid": "http://cilogon.org/serverE/users/26416",
 					"name": "Alex Ip"
 				},
@@ -313,7 +313,7 @@ curl -X 'PUT' \
 			},
 			{
 				"event/actor-attributes": {
-					"email": "alerts@ldaca.edu.au",
+					"email": "alerts@example.com",
 					"userid": "approver-bot",
 					"name": "Approver Bot"
 				},
@@ -326,7 +326,7 @@ curl -X 'PUT' \
 			},
 			{
 				"event/actor-attributes": {
-					"email": "ipai3458@gmail.com",
+					"email": "user@example.com",
 					"userid": "http://cilogon.org/serverE/users/26416",
 					"name": "Alex Ip"
 				},
@@ -342,7 +342,7 @@ curl -X 'PUT' \
 			},
 			{
 				"event/actor-attributes": {
-					"email": "Alex.Ip@aarnet.edu.au",
+					"email": "admin@example.com",
 					"userid": "http://cilogon.org/serverE/users/26179",
 					"name": "Alex Ip"
 				},
