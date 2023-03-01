@@ -171,13 +171,15 @@ class REMSEventHandler(http.server.BaseHTTPRequestHandler):
 
         try:
             event_id = f'event/id:{data["event/id"]}'
-            log.debug(f'{event_id} data: {data}')
         except KeyError:
             msg = f'KeyError: Missing or invalid event_id!'
             log.error(msg)
+            log.debug(f'payload: {payload}')
             self.send_response(400, message=msg)
             self.end_headers()
             return
+
+        log.debug(f'{event_id} data: {data}')
 
         if self.path != '/event':
             msg = f'{event_id} Invalid path "{self.path}"!'
