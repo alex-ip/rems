@@ -122,9 +122,16 @@ class REMSEventHandler(http.server.BaseHTTPRequestHandler):
         log.debug(f'Received PUT request at {self.path}, headers: {self.headers}')
         length = int(self.headers['content-length'])
         payload = self.rfile.read(length).decode("utf-8")
-        data = json.loads(payload)
 
         failed = False
+        if payload:
+            data = json.loads(payload)
+        else:
+            msg = f'KeyError: Missing or invalid event_id!'
+            log.error(msg)
+            self.send_response(400, message=msg)
+            failed = True
+
         try:
             event_id = f'event/id:{data["event/id"]}'
             log.debug(f'{event_id} data: {data}')
