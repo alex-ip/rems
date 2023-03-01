@@ -91,7 +91,9 @@ def revoke_entitlements(user_id, resource_id, event_id):
     """
     application_ids = get_entitlement_application_ids(user_id, resource_id, event_id)
     revoked_count = 0
-    for application_id in application_ids:
+    # Only revoke the first application. The event handler should be called recursively
+    if application_ids:
+        application_id = application_ids[0]
         try:
             log.info(f'{event_id} Revoking application {application_id}')
             revoke_application(application_id)
@@ -102,12 +104,14 @@ def revoke_entitlements(user_id, resource_id, event_id):
     return revoked_count
 
 
-def blacklist_add_event_handler(data, event_id):
+def application_revoked_event_handler(data, event_id):
     """Handle application.event/revoked event - added to REMSEventHandler.EVENT_HANDLERS"""
-    # TODO: Find out what these should actually be
-    user_id = data['event/blacklist']['blacklist/user']['userid']
-    resource_id = data['event/blacklist']['blacklist/resource']['resource/ext-id']
+
+    # Pull required information from data structure in request body
+    user_id = data['event/application']['application/applicant']['userid']
+    resource_id = data['event/application']['application/resources']['resource/ext-id']
     log.info(f'{event_id} Revoking entitlements for user id: {user_id}, resource_id: {resource_id}')
+
     revoked_count = revoke_entitlements(user_id, resource_id, event_id)
     log.info(
         f'{event_id} Revoked {revoked_count} entitlements for user id: {user_id}, resource_id: {resource_id}')
@@ -115,7 +119,7 @@ def blacklist_add_event_handler(data, event_id):
 
 class REMSEventHandler(http.server.BaseHTTPRequestHandler):
     # Specify valid events and their handler functions here
-    EVENT_HANDLERS = {'application.event/revoked': blacklist_add_event_handler}
+    EVENT_HANDLERS = {'application.event/revoked': application_revoked_event_handler}
 
     def do_PUT(self):
         """Handle PUT request to /event path for specific events defined in REMSEventHandler.EVENT_HANDLERS"""
@@ -123,15 +127,15 @@ class REMSEventHandler(http.server.BaseHTTPRequestHandler):
         length = int(self.headers['content-length'])
         payload = self.rfile.read(length).decode("utf-8")
 
-        failed = False
-
-        if payload:
+        try:
             data = json.loads(payload)
-        else:
-            msg = f'KeyError: Missing or invalid event_id!'
+        except Exception as e:
+            msg = f'Unable to parse JSON payload! {type(e).__name__}: {e}'
             log.error(msg)
+            log.debug(f'payload: {payload}')
             self.send_response(400, message=msg)
-            failed = True
+            self.end_headers()
+            return
 
         try:
             event_id = f'event/id:{data["event/id"]}'
@@ -140,32 +144,33 @@ class REMSEventHandler(http.server.BaseHTTPRequestHandler):
             msg = f'KeyError: Missing or invalid event_id!'
             log.error(msg)
             self.send_response(400, message=msg)
-            failed = True
+            self.end_headers()
+            return
 
         if self.path != '/event':
             msg = f'{event_id} Invalid path "{self.path}"!'
             log.error(msg)
             self.send_response(404, message=msg)
-            failed = True
+            self.end_headers()
+            return
 
-        if not failed:
-            event_type = data.get('event/type') or '<UNDEFINED>'
-            try:
-                event_handler = REMSEventHandler.EVENT_HANDLERS.get(event_type)
-                if event_handler:
-                    log.info(f'{event_id} Received valid event notification: {event_type}')
-                    event_handler(data, event_id)
-                    self.send_response(200, message='OK')
-                else:
-                    msg = f'{event_id} Received illegal event type: {event_type}. ' \
-                          f'Expected one of {list(REMSEventHandler.EVENT_HANDLERS.keys())}'
-                    log.error(msg)
-                    self.send_response(400, message=msg)
-
-            except Exception as e:  # Generic exception handling for event handling
-                msg = f'{event_id} Error handling event event_type: {type(e).__name__}: {e}'
+        event_type = data.get('event/type') or '<UNDEFINED>'
+        try:
+            event_handler = REMSEventHandler.EVENT_HANDLERS.get(event_type)
+            if event_handler:
+                log.info(f'{event_id} Received valid event notification: {event_type}')
+                event_handler(data, event_id)
+                self.send_response(200, message='OK')
+            else:
+                msg = f'{event_id} Received illegal event type: {event_type}. ' \
+                      f'Expected one of {list(REMSEventHandler.EVENT_HANDLERS.keys())}'
                 log.error(msg)
-                self.send_response(500, message=msg)
+                self.send_response(400, message=msg)
+
+        except Exception as e:  # Generic exception handling for event handling
+            msg = f'{event_id} Error handling event event_type: {type(e).__name__}: {e}'
+            log.error(msg)
+            self.send_response(500, message=msg)
 
         self.end_headers()
         return
