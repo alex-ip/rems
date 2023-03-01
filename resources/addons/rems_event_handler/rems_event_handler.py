@@ -109,7 +109,7 @@ def application_revoked_event_handler(data, event_id):
 
     # Pull required information from data structure in request body
     user_id = data['event/application']['application/applicant']['userid']
-    resource_id = data['event/application']['application/resources']['resource/ext-id']
+    resource_id = data['event/application']['application/resources'][0]['resource/ext-id']
     log.info(f'{event_id} Revoking entitlements for user id: {user_id}, resource_id: {resource_id}')
 
     revoked_count = revoke_entitlements(user_id, resource_id, event_id)
