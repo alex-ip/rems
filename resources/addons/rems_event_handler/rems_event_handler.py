@@ -118,8 +118,40 @@ def application_revoked_event_handler(data, event_id):
 
 
 class REMSEventHandler(http.server.BaseHTTPRequestHandler):
-    # Specify valid events and their handler functions here
-    EVENT_HANDLERS = {'application.event/revoked': application_revoked_event_handler}
+    # Specify handled events and their handler functions here
+    EVENT_HANDLERS = {
+        # 'application.event/applicant-changed': None,
+        # 'application.event/approved': None,
+        # 'application.event/closed': None,
+        # 'application.event/copied-from': None,
+        # 'application.event/copied-to': None,
+        # 'application.event/created': None,
+        # 'application.event/decided': None,
+        # 'application.event/decider-invited': None,
+        # 'application.event/decider-joined': None,
+        # 'application.event/decision-requested': None,
+        # 'application.event/deleted': None,
+        # 'application.event/draft-saved': None,
+        # 'application.event/expiration-notifications-sent': None,
+        # 'application.event/external-id-assigned': None,
+        # 'application.event/licenses-accepted': None,
+        # 'application.event/licenses-added': None,
+        # 'application.event/member-added': None,
+        # 'application.event/member-invited': None,
+        # 'application.event/member-joined': None,
+        # 'application.event/member-removed': None,
+        # 'application.event/member-uninvited': None,
+        # 'application.event/rejected': None,
+        # 'application.event/remarked': None,
+        # 'application.event/resources-changed': None,
+        # 'application.event/returned': None,
+        # 'application.event/review-requested': None,
+        # 'application.event/reviewed': None,
+        # 'application.event/reviewer-invited': None,
+        # 'application.event/reviewer-joined': None,
+        'application.event/revoked': application_revoked_event_handler,
+        # 'application.event/submitted': None,
+    }
 
     def do_PUT(self):
         """Handle PUT request to /event path for specific events defined in REMSEventHandler.EVENT_HANDLERS"""
