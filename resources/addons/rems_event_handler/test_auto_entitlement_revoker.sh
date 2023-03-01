@@ -6,7 +6,7 @@ curl -X 'PUT' \
   -H 'Content-Type: application/json' \
   -d '{
     "event/id": "TEST_EVENT",
-    "event/type": "blacklist.event/add",
+    "event/type": "application.event/revoked",
     "event/blacklist": {
         "blacklist/user": {
             "userid": "http://cilogon.org/serverE/users/26416",

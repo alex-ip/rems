@@ -6,7 +6,7 @@ On notification, it attempts to handle the event.
 ## Specific Event Handlers
 ### Auto Entitlement Revoker
 
-On `blacklist.event/add` notification, it tries to revoke any applications associated with the new blacklist entry.
+On `application.event/revoked` notification, it tries to revoke any applications associated with the new blacklist entry.
 
 ## Installation
 
@@ -15,7 +15,7 @@ See [config.ini](config.ini) for an example of a configuration file that must be
 Add this in your REMS `config.edn`:
 ```
 :event-notification-targets [{:url "http://127.0.0.1:3009/event"
-                              :event-types [:blacklist.event/add]}]
+                              :event-types [:application.event/revoked]}]
 ```
 
 ## Running locally
@@ -25,5 +25,5 @@ cd rems/resources/addons/rems_event_handler
 docker build -t <BUILD_NAME> .
 docker run --rm --network="host" --name <CONTAINER_NAME> <BUILD_NAME>
 ```
-Invoke the `blacklist.event/add` event in REMS and check that the auto_entitlement_revoker log looks ok. The actual request to 
+Invoke the `application.event/revoked` event in REMS and check that the auto_entitlement_revoker log looks ok. The actual request to 
 REMS might fail from your local environment depending your configuration. 

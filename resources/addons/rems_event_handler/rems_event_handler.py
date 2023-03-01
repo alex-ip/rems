@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # A simple HTTP server listening for REMS event notifications.
-# On 'blacklist.event/add' notification it tries to revoke any existing entitlements for that user & resource.
+# On 'application.event/revoked' notification it tries to revoke any existing entitlements for that user & resource.
 
 # A configuration file 'config.ini' must be supplied.
 
@@ -103,7 +103,7 @@ def revoke_entitlements(user_id, resource_id, event_id):
 
 
 def blacklist_add_event_handler(data, event_id):
-    """Handle blacklist.event/add event - added to REMSEventHandler.EVENT_HANDLERS"""
+    """Handle application.event/revoked event - added to REMSEventHandler.EVENT_HANDLERS"""
     # TODO: Find out what these should actually be
     user_id = data['event/blacklist']['blacklist/user']['userid']
     resource_id = data['event/blacklist']['blacklist/resource']['resource/ext-id']
@@ -115,7 +115,7 @@ def blacklist_add_event_handler(data, event_id):
 
 class REMSEventHandler(http.server.BaseHTTPRequestHandler):
     # Specify valid events and their handler functions here
-    EVENT_HANDLERS = {'blacklist.event/add': blacklist_add_event_handler}
+    EVENT_HANDLERS = {'application.event/revoked': blacklist_add_event_handler}
 
     def do_PUT(self):
         """Handle PUT request to /event path for specific events defined in REMSEventHandler.EVENT_HANDLERS"""
@@ -124,6 +124,7 @@ class REMSEventHandler(http.server.BaseHTTPRequestHandler):
         payload = self.rfile.read(length).decode("utf-8")
 
         failed = False
+
         if payload:
             data = json.loads(payload)
         else:
