@@ -114,7 +114,7 @@ def blacklist_add_event_handler(data, event_id):
 
 
 class REMSAutoEntitlementRevoker(http.server.BaseHTTPRequestHandler):
-    # Specify valid event handler functions here
+    # Specify valid events and their handler functions here
     EVENT_HANDLERS = {'blacklist.event/add': blacklist_add_event_handler}
 
     def do_PUT(self):
@@ -124,6 +124,7 @@ class REMSAutoEntitlementRevoker(http.server.BaseHTTPRequestHandler):
         payload = self.rfile.read(length).decode("utf-8")
         data = json.loads(payload)
 
+        failed = False
         try:
             event_id = f'event/id:{data["event/id"]}'
             log.debug(f'{event_id} data: {data}')
@@ -131,31 +132,32 @@ class REMSAutoEntitlementRevoker(http.server.BaseHTTPRequestHandler):
             msg = f'KeyError: Missing or invalid event_id!'
             log.error(msg)
             self.send_response(400, message=msg)
-            raise
+            failed = True
 
         if self.path != '/event':
             msg = f'{event_id} Invalid path "{self.path}"!'
-            log.debug(msg)
-            self.send_response(404, message=msg)
-            raise Exception(msg)
-
-        event_type = data.get('event/type') or '<UNDEFINED>'
-        try:
-            event_handler = REMSAutoEntitlementRevoker.EVENT_HANDLERS.get(event_type)
-            if event_handler:
-                log.info(f'{event_id} Received valid event notification: {event_type}')
-                event_handler(data, event_id)
-                self.send_response(200, message='OK')
-            else:
-                msg = f'{event_id} Received illegal event type: {event_type}. ' \
-                      f'Expected one of {list(REMSAutoEntitlementRevoker.EVENT_HANDLERS.keys())}'
-                log.error(msg)
-                self.send_response(400, message=msg)
-
-        except Exception as e:  # Generic exception handling for event handling
-            msg = f'{event_id} Error handling event event_type: {type(e).__name__}: {e}'
             log.error(msg)
-            self.send_response(500, message=msg)
+            self.send_response(404, message=msg)
+            failed = True
+
+        if not failed:
+            event_type = data.get('event/type') or '<UNDEFINED>'
+            try:
+                event_handler = REMSAutoEntitlementRevoker.EVENT_HANDLERS.get(event_type)
+                if event_handler:
+                    log.info(f'{event_id} Received valid event notification: {event_type}')
+                    event_handler(data, event_id)
+                    self.send_response(200, message='OK')
+                else:
+                    msg = f'{event_id} Received illegal event type: {event_type}. ' \
+                          f'Expected one of {list(REMSAutoEntitlementRevoker.EVENT_HANDLERS.keys())}'
+                    log.error(msg)
+                    self.send_response(400, message=msg)
+
+            except Exception as e:  # Generic exception handling for event handling
+                msg = f'{event_id} Error handling event event_type: {type(e).__name__}: {e}'
+                log.error(msg)
+                self.send_response(500, message=msg)
 
         self.end_headers()
         return
